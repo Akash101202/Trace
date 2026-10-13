@@ -24,3 +24,14 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* TRACE: current execution line */
+.monaco-editor .trace-current-line {
+  background: rgba(212, 175, 55, 0.14) !important;
+}
+
+.monaco-editor .trace-line-marker {
+  border-left: 3px solid #d4af37;
+  margin-left: 3px;
+  box-sizing: border-box;
+}

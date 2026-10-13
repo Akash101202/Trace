@@ -1,5 +1,16 @@
 export function execute(code) {
-  const fn = new Function(code);
+  const events = [];
 
-  return fn();
+  function recordEvent(event) {
+    events.push(event);
+  }
+
+  const fn = new Function("recordEvent", code);
+
+  const result = fn(recordEvent);
+
+  return {
+    result,
+    events,
+  };
 }
