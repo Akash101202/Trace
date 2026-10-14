@@ -35,3 +35,86 @@ body {
   margin-left: 3px;
   box-sizing: border-box;
 }
+
+/* TRACE: animate a variable when its value changes */
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-value-changed {
+    animation: none;
+  }
+}
+
+/* TRACE execution-line accents */
+.monaco-editor .trace-current-line.trace-tone-gold {
+  background: rgba(212, 175, 55, 0.13) !important;
+}
+
+.monaco-editor .trace-current-line.trace-tone-cyan {
+  background: rgba(77, 208, 225, 0.14) !important;
+}
+
+.monaco-editor .trace-current-line.trace-tone-violet {
+  background: rgba(139, 124, 255, 0.15) !important;
+}
+
+.monaco-editor .trace-current-line.trace-tone-red {
+  background: rgba(248, 113, 113, 0.15) !important;
+}
+
+.monaco-editor .trace-line-marker.trace-marker-gold {
+  border-left: 3px solid #d4af37;
+  margin-left: 3px;
+}
+
+.monaco-editor .trace-line-marker.trace-marker-cyan {
+  border-left: 3px solid #4dd0e1;
+  margin-left: 3px;
+}
+
+.monaco-editor .trace-line-marker.trace-marker-violet {
+  border-left: 3px solid #8b7cff;
+  margin-left: 3px;
+}
+
+.monaco-editor .trace-line-marker.trace-marker-red {
+  border-left: 3px solid #f87171;
+  margin-left: 3px;
+}
+
+/* TRACE execution state colors */
+
+.monaco-editor .trace-current-line.trace-tone-gold {
+  background: rgba(212, 175, 55, 0.13) !important;
+}
+
+.monaco-editor .trace-current-line.trace-tone-cyan {
+  background: rgba(77, 208, 225, 0.14) !important;
+}
+
+.monaco-editor .trace-current-line.trace-tone-violet {
+  background: rgba(139, 124, 255, 0.15) !important;
+}
+
+.monaco-editor .trace-current-line.trace-tone-red {
+  background: rgba(248, 113, 113, 0.15) !important;
+}
+
+.monaco-editor .trace-line-marker.trace-marker-gold {
+  border-left: 3px solid #d4af37;
+  margin-left: 3px;
+}
+
+.monaco-editor .trace-line-marker.trace-marker-cyan {
+  border-left: 3px solid #4dd0e1;
+  margin-left: 3px;
+}
+
+.monaco-editor .trace-line-marker.trace-marker-violet {
+  border-left: 3px solid #8b7cff;
+  margin-left: 3px;
+}
+
+.monaco-editor .trace-line-marker.trace-marker-red {
+  border-left: 3px solid #f87171;
+  margin-left: 3px;
+}

@@ -8,9 +8,9 @@ import ExecutionPanel from "./components/ExecutionPanel";
 import { parseCode } from "./engine/parser";
 import { executeProgram } from "./engine/interpreter";
 
-const initialCode = `let x = 10;
-x = x + 5;
-x = x * 2;`;
+const initialCode = `let arr = [5, 2, 8];
+arr[0] = 10;
+arr[1] = arr[0] + 3;`;
 
 const emptyExecution = {
   variables: {},
@@ -22,29 +22,101 @@ export default function Home() {
   const [code, setCode] = useState(initialCode);
   const [execution, setExecution] = useState(emptyExecution);
   const [activeStep, setActiveStep] = useState(-1);
+  const [executionMode, setExecutionMode] = useState("run");
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState("");
+  const [errorInfo, setErrorInfo] = useState(null);
 
-  function handleRun() {
+  const debugMode = executionMode === "debug";
+
+  function handleExecute(mode) {
+    setIsPlaying(false);
+    setExecutionMode(mode);
+
     try {
       const ast = parseCode(code);
       const result = executeProgram(ast);
 
       setExecution(result);
-      setActiveStep(result.events.length > 0 ? 0 : -1);
-      setIsPlaying(result.events.length > 1);
       setError("");
-    } catch (err) {
-      setExecution(emptyExecution);
-      setActiveStep(-1);
-      setIsPlaying(false);
-      setError(err instanceof Error ? err.message : String(err));
+      setErrorInfo(null);
+
+      if (mode === "debug") {
+        // Begin at the first event and wait for user input.
+        setActiveStep(result.events.length > 0 ? 0 : -1);
+      } else {
+        // Normal Run shows the final state immediately.
+        setActiveStep(result.events.length > 0 ? result.events.length - 1 : -1);
+      }
+    } catch (caughtError) {
+      const traceInfo = caughtError?.traceInfo;
+
+      const message =
+        caughtError instanceof Error
+          ? caughtError.message
+          : String(caughtError);
+
+      const line =
+        traceInfo?.line ??
+        caughtError?.traceLine ??
+        caughtError?.loc?.line ??
+        null;
+
+      const column =
+        traceInfo?.column ??
+        (caughtError?.loc?.column != null
+          ? caughtError.loc.column + 1
+          : (caughtError?.traceColumn ?? null));
+
+      const kind = traceInfo?.kind ?? (caughtError?.loc ? "syntax" : "runtime");
+
+      setError(message);
+      setErrorInfo({ kind, message, line, column });
+
+      if (traceInfo) {
+        const events = [
+          ...traceInfo.events,
+          {
+            type: "error",
+            message,
+            kind,
+            line,
+            column,
+          },
+        ];
+
+        const snapshots = [...traceInfo.snapshots, traceInfo.variables ?? {}];
+
+        setExecution({
+          variables: traceInfo.variables ?? {},
+          events,
+          snapshots,
+        });
+
+        setActiveStep(
+          mode === "debug" && traceInfo.events.length > 0
+            ? 0
+            : events.length - 1,
+        );
+      } else {
+        // Parsing failed before execution began.
+        setExecution(emptyExecution);
+        setActiveStep(-1);
+      }
     }
   }
 
-  // Automatically advance through execution snapshots.
+  function handleRun() {
+    handleExecute("run");
+  }
+
+  function handleDebug() {
+    handleExecute("debug");
+  }
+
+  // Automatic playback is available in Debug mode.
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || !debugMode) return;
 
     if (activeStep >= execution.events.length - 1) {
       setIsPlaying(false);
@@ -56,7 +128,7 @@ export default function Home() {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, activeStep, execution.events.length]);
+  }, [isPlaying, debugMode, activeStep, execution.events.length]);
 
   function handleStep() {
     setIsPlaying(false);
@@ -67,9 +139,9 @@ export default function Home() {
   }
 
   function handleTogglePlayback() {
-    if (activeStep < execution.events.length - 1) {
-      setIsPlaying((playing) => !playing);
-    }
+    if (activeStep >= execution.events.length - 1) return;
+
+    setIsPlaying((playing) => !playing);
   }
 
   function handleSelectStep(index) {
@@ -81,22 +153,33 @@ export default function Home() {
     setIsPlaying(false);
     setExecution(emptyExecution);
     setActiveStep(-1);
+    setExecutionMode("run");
     setError("");
+    setErrorInfo(null);
   }
 
   const canStep =
-    execution.events.length > 0 && activeStep < execution.events.length - 1;
+    debugMode &&
+    execution.events.length > 0 &&
+    activeStep < execution.events.length - 1;
+
+  const canPlay =
+    debugMode &&
+    execution.events.length > 0 &&
+    activeStep < execution.events.length - 1;
 
   return (
-    <main className="min-h-screen bg-zinc-950">
+    <main className="min-h-screen bg-[#080807]">
       <Header
         onRun={handleRun}
+        onDebug={handleDebug}
         onStep={handleStep}
         onReset={handleReset}
         onTogglePlayback={handleTogglePlayback}
         canStep={canStep}
-        canResume={canStep}
+        canPlay={canPlay}
         isPlaying={isPlaying}
+        debugMode={debugMode}
       />
 
       <Workspace
@@ -105,6 +188,7 @@ export default function Home() {
         execution={execution}
         activeStep={activeStep}
         error={error}
+        errorInfo={errorInfo}
       />
 
       <ExecutionPanel

@@ -3,7 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 
-export default function CodeEditor({ code, onChange, activeLine = null }) {
+function getLineTone(type) {
+  // The execution pointer is cyan in every mode.
+  // Errors remain red for visibility.
+  return type === "error" ? "red" : "cyan";
+}
+export default function CodeEditor({
+  code,
+  onChange,
+  activeLine = null,
+  activeEventType = "",
+}) {
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const decorationsRef = useRef([]);
@@ -34,14 +44,21 @@ export default function CodeEditor({ code, onChange, activeLine = null }) {
         "editorLineNumber.activeForeground": "#D4AF37",
         "editorCursor.foreground": "#F5D76E",
         "editor.selectionBackground": "#6B572955",
-        "editor.lineHighlightBackground": "#17140D",
-        "editorGutter.background": "#080807",
-        "editorWidget.background": "#11110E",
-        "editorWidget.border": "#39311E",
+        "editor.inactiveSelectionBackground": "#6B572930",
+        "editor.lineHighlightBackground": "#11110E",
+        "editorLineNumber.border": "#00000000",
         "editorIndentGuide.background1": "#292315",
         "editorIndentGuide.activeBackground1": "#6B5729",
+        "editorWidget.background": "#11110E",
+        "editorWidget.border": "#39311E",
+        "editorSuggestWidget.background": "#11110E",
+        "editorSuggestWidget.border": "#39311E",
+        "editorSuggestWidget.selectedBackground": "#302819",
+        "editorGutter.background": "#080807",
+        "editorOverviewRuler.border": "#00000000",
         "scrollbarSlider.background": "#6B572933",
         "scrollbarSlider.hoverBackground": "#8D733066",
+        "scrollbarSlider.activeBackground": "#D4AF3744",
       },
     });
   }
@@ -60,14 +77,16 @@ export default function CodeEditor({ code, onChange, activeLine = null }) {
 
     const validLine = Number.isInteger(activeLine) && activeLine > 0;
 
-    const newDecorations = validLine
+    const tone = getLineTone(activeEventType);
+
+    const nextDecorations = validLine
       ? [
           {
             range: new monaco.Range(activeLine, 1, activeLine, 1),
             options: {
               isWholeLine: true,
-              className: "trace-current-line",
-              linesDecorationsClassName: "trace-line-marker",
+              className: `trace-current-line trace-tone-${tone}`,
+              linesDecorationsClassName: `trace-line-marker trace-marker-${tone}`,
             },
           },
         ]
@@ -75,9 +94,14 @@ export default function CodeEditor({ code, onChange, activeLine = null }) {
 
     decorationsRef.current = editor.deltaDecorations(
       decorationsRef.current,
-      newDecorations,
+      nextDecorations,
     );
-  }, [activeLine, editorReady]);
+
+    // Keep the active execution line in view.
+    if (validLine) {
+      editor.revealLineInCenterIfOutsideViewport(activeLine);
+    }
+  }, [activeLine, activeEventType, editorReady]);
 
   return (
     <div className="h-full w-full overflow-hidden">
