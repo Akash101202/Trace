@@ -1,120 +1,266 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* =========================================================
+   TRACE DESIGN SYSTEM
+   Components should use semantic tokens instead of fixed
+   zinc/gray colors wherever practical.
+   ========================================================= */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --trace-bg: #080b12;
+  --trace-bg-soft: #0c111b;
+
+  --trace-panel: #101826;
+  --trace-panel-raised: #141f30;
+
+  --trace-surface: #172235;
+  --trace-surface-hover: #202e44;
+
+  --trace-border: #28364b;
+  --trace-border-strong: #405571;
+
+  --trace-text: #f5f7fc;
+  --trace-text-muted: #adbacd;
+  --trace-text-subtle: #8593a9;
+
+  --trace-brand: #f1ca59;
+  --trace-brand-strong: #ffdc78;
+  --trace-brand-ink: #211907;
+  --trace-brand-soft: rgba(241, 202, 89, 0.13);
+
+  --trace-cyan: #48d8ef;
+  --trace-cyan-strong: #75e8f8;
+  --trace-cyan-soft: rgba(72, 216, 239, 0.12);
+
+  --trace-violet: #ad98ff;
+  --trace-violet-soft: rgba(173, 152, 255, 0.14);
+
+  --trace-green: #4ce0ac;
+  --trace-green-soft: rgba(76, 224, 172, 0.12);
+
+  --trace-red: #ff7886;
+  --trace-red-soft: rgba(255, 120, 134, 0.13);
+
+  --trace-orange: #ffb36b;
+  --trace-orange-soft: rgba(255, 179, 107, 0.13);
+
+  --trace-scroll-thumb: #35445a;
+  --trace-shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+
+  --background: var(--trace-bg);
+  --foreground: var(--trace-text);
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --trace-bg: #f3f6fc;
+  --trace-bg-soft: #eaf0f8;
+
+  --trace-panel: #ffffff;
+  --trace-panel-raised: #f9fbff;
+
+  --trace-surface: #eef3fa;
+  --trace-surface-hover: #e2eaf5;
+
+  --trace-border: #d6e0ed;
+  --trace-border-strong: #b8c8dc;
+
+  --trace-text: #172238;
+  --trace-text-muted: #485a73;
+  --trace-text-subtle: #657790;
+
+  --trace-brand: #bd8500;
+  --trace-brand-strong: #966900;
+  --trace-brand-ink: #ffffff;
+  --trace-brand-soft: rgba(189, 133, 0, 0.12);
+
+  --trace-cyan: #007f9f;
+  --trace-cyan-strong: #00657f;
+  --trace-cyan-soft: rgba(0, 127, 159, 0.1);
+
+  --trace-violet: #7250cc;
+  --trace-violet-soft: rgba(114, 80, 204, 0.1);
+
+  --trace-green: #087d5b;
+  --trace-green-soft: rgba(8, 125, 91, 0.1);
+
+  --trace-red: #cf394e;
+  --trace-red-soft: rgba(207, 57, 78, 0.09);
+
+  --trace-orange: #a85a10;
+  --trace-orange-soft: rgba(168, 90, 16, 0.1);
+
+  --trace-scroll-thumb: #bac8da;
+  --trace-shadow: 0 14px 34px rgba(35, 54, 83, 0.09);
+
+  --background: var(--trace-bg);
+  --foreground: var(--trace-text);
+}
+
+/* Tailwind v4 semantic color utilities */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-trace-bg: var(--trace-bg);
+  --color-trace-bg-soft: var(--trace-bg-soft);
+  --color-trace-panel: var(--trace-panel);
+  --color-trace-panel-raised: var(--trace-panel-raised);
+  --color-trace-surface: var(--trace-surface);
+  --color-trace-surface-hover: var(--trace-surface-hover);
+
+  --color-trace-border: var(--trace-border);
+  --color-trace-border-strong: var(--trace-border-strong);
+
+  --color-trace-text: var(--trace-text);
+  --color-trace-text-muted: var(--trace-text-muted);
+  --color-trace-text-subtle: var(--trace-text-subtle);
+
+  --color-trace-brand: var(--trace-brand);
+  --color-trace-cyan: var(--trace-cyan);
+  --color-trace-violet: var(--trace-violet);
+  --color-trace-green: var(--trace-green);
+  --color-trace-red: var(--trace-red);
+  --color-trace-orange: var(--trace-orange);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* =========================================================
+   GLOBAL BASE
+   ========================================================= */
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-/* TRACE: current execution line */
-.monaco-editor .trace-current-line {
-  background: rgba(212, 175, 55, 0.14) !important;
-}
-
-.monaco-editor .trace-line-marker {
-  border-left: 3px solid #d4af37;
-  margin-left: 3px;
+* {
   box-sizing: border-box;
 }
 
-/* TRACE: animate a variable when its value changes */
+html {
+  min-height: 100%;
+  background: var(--trace-bg);
+  color-scheme: dark;
+}
 
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--trace-bg);
+  color: var(--trace-text);
+  font-family: var(--font-geist-sans), sans-serif;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--trace-cyan-soft);
+  color: var(--trace-text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--trace-cyan);
+  outline-offset: 3px;
+}
+
+/* Consistent scrollbars across editors, panels and the page */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--trace-scroll-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--trace-scroll-thumb);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--trace-text-subtle);
+  background-clip: padding-box;
+}
+
+/* =========================================================
+   MONACO EXECUTION HIGHLIGHTS
+   ========================================================= */
+
+.monaco-editor .trace-current-line.trace-tone-gold {
+  background: var(--trace-brand-soft) !important;
+}
+
+.monaco-editor .trace-current-line.trace-tone-cyan {
+  background: var(--trace-cyan-soft) !important;
+}
+
+.monaco-editor .trace-current-line.trace-tone-violet {
+  background: var(--trace-violet-soft) !important;
+}
+
+.monaco-editor .trace-current-line.trace-tone-red {
+  background: var(--trace-red-soft) !important;
+}
+
+.monaco-editor .trace-line-marker {
+  box-sizing: border-box;
+  margin-left: 3px;
+}
+
+.monaco-editor .trace-line-marker.trace-marker-gold {
+  border-left: 3px solid var(--trace-brand);
+}
+
+.monaco-editor .trace-line-marker.trace-marker-cyan {
+  border-left: 3px solid var(--trace-cyan);
+}
+
+.monaco-editor .trace-line-marker.trace-marker-violet {
+  border-left: 3px solid var(--trace-violet);
+}
+
+.monaco-editor .trace-line-marker.trace-marker-red {
+  border-left: 3px solid var(--trace-red);
+}
+
+/* Respect the user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  .trace-value-changed {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
-}
 
-/* TRACE execution-line accents */
-.monaco-editor .trace-current-line.trace-tone-gold {
-  background: rgba(212, 175, 55, 0.13) !important;
-}
-
-.monaco-editor .trace-current-line.trace-tone-cyan {
-  background: rgba(77, 208, 225, 0.14) !important;
-}
-
-.monaco-editor .trace-current-line.trace-tone-violet {
-  background: rgba(139, 124, 255, 0.15) !important;
-}
-
-.monaco-editor .trace-current-line.trace-tone-red {
-  background: rgba(248, 113, 113, 0.15) !important;
-}
-
-.monaco-editor .trace-line-marker.trace-marker-gold {
-  border-left: 3px solid #d4af37;
-  margin-left: 3px;
-}
-
-.monaco-editor .trace-line-marker.trace-marker-cyan {
-  border-left: 3px solid #4dd0e1;
-  margin-left: 3px;
-}
-
-.monaco-editor .trace-line-marker.trace-marker-violet {
-  border-left: 3px solid #8b7cff;
-  margin-left: 3px;
-}
-
-.monaco-editor .trace-line-marker.trace-marker-red {
-  border-left: 3px solid #f87171;
-  margin-left: 3px;
-}
-
-/* TRACE execution state colors */
-
-.monaco-editor .trace-current-line.trace-tone-gold {
-  background: rgba(212, 175, 55, 0.13) !important;
-}
-
-.monaco-editor .trace-current-line.trace-tone-cyan {
-  background: rgba(77, 208, 225, 0.14) !important;
-}
-
-.monaco-editor .trace-current-line.trace-tone-violet {
-  background: rgba(139, 124, 255, 0.15) !important;
-}
-
-.monaco-editor .trace-current-line.trace-tone-red {
-  background: rgba(248, 113, 113, 0.15) !important;
-}
-
-.monaco-editor .trace-line-marker.trace-marker-gold {
-  border-left: 3px solid #d4af37;
-  margin-left: 3px;
-}
-
-.monaco-editor .trace-line-marker.trace-marker-cyan {
-  border-left: 3px solid #4dd0e1;
-  margin-left: 3px;
-}
-
-.monaco-editor .trace-line-marker.trace-marker-violet {
-  border-left: 3px solid #8b7cff;
-  margin-left: 3px;
-}
-
-.monaco-editor .trace-line-marker.trace-marker-red {
-  border-left: 3px solid #f87171;
-  margin-left: 3px;
+  .trace-value-changed {
+    animation: none !important;
+  }
 }

@@ -2,80 +2,181 @@
 
 import { useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
+import { useTraceTheme } from "./ThemeProvider";
 
 function getLineTone(type) {
-  // The execution pointer is cyan in every mode.
-  // Errors remain red for visibility.
+  // Keep execution cyan; make errors red.
   return type === "error" ? "red" : "cyan";
 }
+
+function defineTraceThemes(monaco) {
+  // =======================================================
+  // DARK THEME — deep navy with vibrant syntax colors
+  // =======================================================
+  monaco.editor.defineTheme("trace-dark", {
+    base: "vs-dark",
+    inherit: true,
+
+    rules: [
+      { token: "keyword", foreground: "C4A7FF", fontStyle: "bold" },
+      { token: "number", foreground: "FFD479" },
+      { token: "string", foreground: "91E6B3" },
+      { token: "comment", foreground: "8190A8", fontStyle: "italic" },
+      { token: "identifier", foreground: "E3ECF8" },
+      { token: "type.identifier", foreground: "65DFF0" },
+      { token: "delimiter", foreground: "A9BAD2" },
+      { token: "operator", foreground: "FF9ECF" },
+      { token: "function", foreground: "8ED9FF" },
+      { token: "variable", foreground: "E3ECF8" },
+      { token: "string.key.json", foreground: "8ED9FF" },
+    ],
+
+    colors: {
+      "editor.background": "#101826",
+      "editor.foreground": "#E3ECF8",
+
+      "editorLineNumber.foreground": "#667790",
+      "editorLineNumber.activeForeground": "#FFD479",
+
+      "editorCursor.foreground": "#FFD479",
+      "editor.selectionBackground": "#4B608755",
+      "editor.inactiveSelectionBackground": "#4B608733",
+
+      "editor.lineHighlightBackground": "#172235",
+      "editor.lineHighlightBorder": "#00000000",
+
+      "editorLineNumber.border": "#00000000",
+      "editorIndentGuide.background1": "#28364B",
+      "editorIndentGuide.activeBackground1": "#48D8EF",
+
+      "editorGutter.background": "#101826",
+      "editorOverviewRuler.border": "#00000000",
+
+      "editorWidget.background": "#141F30",
+      "editorWidget.border": "#354660",
+
+      "editorSuggestWidget.background": "#141F30",
+      "editorSuggestWidget.border": "#354660",
+      "editorSuggestWidget.selectedBackground": "#263951",
+      "editorSuggestWidget.highlightForeground": "#48D8EF",
+
+      "editorBracketMatch.background": "#48D8EF22",
+      "editorBracketMatch.border": "#48D8EF",
+
+      "scrollbarSlider.background": "#52647A55",
+      "scrollbarSlider.hoverBackground": "#7189A666",
+      "scrollbarSlider.activeBackground": "#48D8EF77",
+    },
+  });
+
+  // =======================================================
+  // LIGHT THEME — soft paper-like white with clear syntax
+  // =======================================================
+  monaco.editor.defineTheme("trace-light", {
+    base: "vs",
+    inherit: true,
+
+    rules: [
+      { token: "keyword", foreground: "7540C8", fontStyle: "bold" },
+      { token: "number", foreground: "A85A10" },
+      { token: "string", foreground: "087D5B" },
+      { token: "comment", foreground: "77859A", fontStyle: "italic" },
+      { token: "identifier", foreground: "263247" },
+      { token: "type.identifier", foreground: "007F9F" },
+      { token: "delimiter", foreground: "526176" },
+      { token: "operator", foreground: "BE185D" },
+      { token: "function", foreground: "0969A7" },
+      { token: "variable", foreground: "263247" },
+      { token: "string.key.json", foreground: "0969A7" },
+    ],
+
+    colors: {
+      "editor.background": "#F9FBFF",
+      "editor.foreground": "#263247",
+
+      "editorLineNumber.foreground": "#92A0B3",
+      "editorLineNumber.activeForeground": "#966900",
+
+      "editorCursor.foreground": "#966900",
+      "editor.selectionBackground": "#C5D8F055",
+      "editor.inactiveSelectionBackground": "#C5D8F033",
+
+      "editor.lineHighlightBackground": "#EDF3FC",
+      "editor.lineHighlightBorder": "#00000000",
+
+      "editorLineNumber.border": "#00000000",
+      "editorIndentGuide.background1": "#DCE5F0",
+      "editorIndentGuide.activeBackground1": "#007F9F",
+
+      "editorGutter.background": "#F9FBFF",
+      "editorOverviewRuler.border": "#00000000",
+
+      "editorWidget.background": "#FFFFFF",
+      "editorWidget.border": "#D6E0ED",
+
+      "editorSuggestWidget.background": "#FFFFFF",
+      "editorSuggestWidget.border": "#D6E0ED",
+      "editorSuggestWidget.selectedBackground": "#E5EEF9",
+      "editorSuggestWidget.highlightForeground": "#007F9F",
+
+      "editorBracketMatch.background": "#007F9F18",
+      "editorBracketMatch.border": "#007F9F",
+
+      "scrollbarSlider.background": "#BAC8DA88",
+      "scrollbarSlider.hoverBackground": "#8FA3BC99",
+      "scrollbarSlider.activeBackground": "#007F9F77",
+    },
+  });
+}
+
 export default function CodeEditor({
   code,
   onChange,
   activeLine = null,
   activeEventType = "",
 }) {
+  const { theme } = useTraceTheme();
+
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const decorationsRef = useRef([]);
+
   const [editorReady, setEditorReady] = useState(false);
 
   function handleBeforeMount(monaco) {
-    monaco.editor.defineTheme("trace-gold", {
-      base: "vs-dark",
-      inherit: true,
-      rules: [
-        { token: "keyword", foreground: "D4AF37" },
-        { token: "number", foreground: "F5D76E" },
-        { token: "string", foreground: "A8B875" },
-        {
-          token: "comment",
-          foreground: "81765A",
-          fontStyle: "italic",
-        },
-        { token: "identifier", foreground: "E8DEC4" },
-        { token: "type.identifier", foreground: "E5C46B" },
-        { token: "delimiter", foreground: "B6A780" },
-        { token: "operator", foreground: "D4AF37" },
-      ],
-      colors: {
-        "editor.background": "#080807",
-        "editor.foreground": "#F5F0E1",
-        "editorLineNumber.foreground": "#625638",
-        "editorLineNumber.activeForeground": "#D4AF37",
-        "editorCursor.foreground": "#F5D76E",
-        "editor.selectionBackground": "#6B572955",
-        "editor.inactiveSelectionBackground": "#6B572930",
-        "editor.lineHighlightBackground": "#11110E",
-        "editorLineNumber.border": "#00000000",
-        "editorIndentGuide.background1": "#292315",
-        "editorIndentGuide.activeBackground1": "#6B5729",
-        "editorWidget.background": "#11110E",
-        "editorWidget.border": "#39311E",
-        "editorSuggestWidget.background": "#11110E",
-        "editorSuggestWidget.border": "#39311E",
-        "editorSuggestWidget.selectedBackground": "#302819",
-        "editorGutter.background": "#080807",
-        "editorOverviewRuler.border": "#00000000",
-        "scrollbarSlider.background": "#6B572933",
-        "scrollbarSlider.hoverBackground": "#8D733066",
-        "scrollbarSlider.activeBackground": "#D4AF3744",
-      },
-    });
+    defineTraceThemes(monaco);
   }
 
   function handleEditorMount(editor, monaco) {
     editorRef.current = editor;
     monacoRef.current = monaco;
+
+    // Set the correct theme immediately when the editor mounts.
+    monaco.editor.setTheme(theme === "light" ? "trace-light" : "trace-dark");
+
     setEditorReady(true);
   }
 
+  // Keep Monaco synchronized with the application theme.
+  useEffect(() => {
+    const monaco = monacoRef.current;
+
+    if (!monaco || !editorReady) return;
+
+    monaco.editor.setTheme(theme === "light" ? "trace-light" : "trace-dark");
+  }, [theme, editorReady]);
+
+  // Highlight the active execution line without losing decorations.
   useEffect(() => {
     const editor = editorRef.current;
     const monaco = monacoRef.current;
 
-    if (!editor || !monaco) return;
+    if (!editor || !monaco || !editorReady) return;
 
-    const validLine = Number.isInteger(activeLine) && activeLine > 0;
+    const validLine =
+      Number.isInteger(activeLine) &&
+      activeLine > 0 &&
+      activeLine <= editor.getModel()?.getLineCount();
 
     const tone = getLineTone(activeEventType);
 
@@ -97,44 +198,59 @@ export default function CodeEditor({
       nextDecorations,
     );
 
-    // Keep the active execution line in view.
     if (validLine) {
       editor.revealLineInCenterIfOutsideViewport(activeLine);
     }
   }, [activeLine, activeEventType, editorReady]);
 
   return (
-    <div className="h-full w-full overflow-hidden">
+    <div className="h-full w-full overflow-hidden bg-trace-panel">
       <Editor
         height="100%"
         language="javascript"
-        theme="trace-gold"
+        theme={theme === "light" ? "trace-light" : "trace-dark"}
         beforeMount={handleBeforeMount}
         onMount={handleEditorMount}
         value={code}
         onChange={(value) => onChange(value ?? "")}
         options={{
           minimap: { enabled: false },
+
           fontSize: 14,
           lineHeight: 24,
-          fontFamily: "JetBrains Mono, Fira Code, monospace",
+          fontFamily:
+            'var(--font-geist-mono), "SFMono-Regular", Consolas, monospace',
           fontLigatures: true,
-          padding: { top: 20, bottom: 20 },
+
+          padding: { top: 18, bottom: 18 },
           scrollBeyondLastLine: false,
           automaticLayout: true,
           wordWrap: "on",
+
           renderLineHighlight: "all",
+          renderWhitespace: "selection",
           smoothScrolling: true,
           cursorBlinking: "smooth",
+          cursorSmoothCaretAnimation: "on",
           roundedSelection: true,
+
           bracketPairColorization: { enabled: true },
           guides: {
             indentation: true,
             highlightActiveIndentation: true,
+            bracketPairs: true,
           },
+
+          stickyScroll: { enabled: true },
+          folding: true,
+          showFoldingControls: "always",
+          matchBrackets: "always",
+
+          accessibilitySupport: "auto",
           scrollbar: {
             verticalScrollbarSize: 8,
             horizontalScrollbarSize: 8,
+            useShadows: false,
           },
         }}
       />
