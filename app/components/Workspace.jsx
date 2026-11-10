@@ -68,6 +68,7 @@ const TONES = {
     surface: "bg-trace-brand/10",
     text: "text-trace-brand",
     dot: "bg-trace-brand",
+    ring: "ring-trace-brand/35",
     label: "Value change",
   },
   cyan: {
@@ -75,6 +76,7 @@ const TONES = {
     surface: "bg-trace-cyan/10",
     text: "text-trace-cyan",
     dot: "bg-trace-cyan",
+    ring: "ring-trace-cyan/35",
     label: "Control flow",
   },
   violet: {
@@ -82,6 +84,7 @@ const TONES = {
     surface: "bg-trace-violet/10",
     text: "text-trace-violet",
     dot: "bg-trace-violet",
+    ring: "ring-trace-violet/35",
     label: "Function",
   },
   green: {
@@ -89,6 +92,7 @@ const TONES = {
     surface: "bg-trace-green/10",
     text: "text-trace-green",
     dot: "bg-trace-green",
+    ring: "ring-trace-green/35",
     label: "Console output",
   },
   red: {
@@ -96,6 +100,7 @@ const TONES = {
     surface: "bg-trace-red/10",
     text: "text-trace-red",
     dot: "bg-trace-red",
+    ring: "ring-trace-red/35",
     label: "Error",
   },
 };
@@ -280,23 +285,25 @@ function EventGlyph({ type }) {
   return <span aria-hidden="true">{glyph}</span>;
 }
 
-function SectionHeading({ eyebrow, title, trailing }) {
+function SectionHeading({ title, trailing }) {
   return (
-    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-      <div>
-        {eyebrow && (
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-trace-text-subtle">
-            {eyebrow}
-          </p>
-        )}
-
-        <h3 className="text-sm font-semibold tracking-wide text-trace-text">
-          {title}
-        </h3>
-      </div>
-
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+      <h3 className="font-display text-[17px] font-semibold tracking-[-0.015em] text-trace-text">
+        {title}
+      </h3>
       {trailing}
     </div>
+  );
+}
+
+// macOS-style window controls, used on the editor card.
+function WindowDots() {
+  return (
+    <span className="flex items-center gap-[7px]" aria-hidden="true">
+      <span className="h-3 w-3 rounded-full bg-[#FF5F57] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.15)]" />
+      <span className="h-3 w-3 rounded-full bg-[#FEBC2E] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.15)]" />
+      <span className="h-3 w-3 rounded-full bg-[#28C840] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.15)]" />
+    </span>
   );
 }
 
@@ -336,8 +343,7 @@ export default function Workspace({
 
   const transition = getEventTransition(latestEvent);
 
-  function handleExampleSelect(event) {
-    const id = event.target.value;
+  function handleExampleSelect(id) {
 
     setSelectedExample(id);
 
@@ -378,20 +384,47 @@ export default function Workspace({
       return;
     }
 
-    const targets = workspaceRef.current?.querySelectorAll(
-      ".trace-value-changed",
-    );
+    const root = workspaceRef.current;
+    if (!root) return;
 
-    if (!targets?.length) return;
+    const animations = [];
+    const card = root.querySelector(".trace-event-card");
+    const after = root.querySelector(".trace-after");
+    const changed = root.querySelectorAll(".trace-value-changed");
 
-    const animation = animate(targets, {
-      scale: [0.96, 1.025, 1],
-      translateY: [4, -1, 0],
-      duration: 420,
-      ease: "outExpo",
-    });
+    // The event card settles in; the new value springs into place.
+    if (card) {
+      animations.push(
+        animate(card, {
+          opacity: [0.4, 1],
+          translateY: [6, 0],
+          duration: 420,
+          ease: "out(4)",
+        }),
+      );
+    }
+    if (after) {
+      animations.push(
+        animate(after, {
+          scale: [0.86, 1],
+          opacity: [0, 1],
+          duration: 640,
+          delay: 90,
+          ease: "outElastic(1, .7)",
+        }),
+      );
+    }
+    if (changed.length) {
+      animations.push(
+        animate(changed, {
+          scale: [0.92, 1],
+          duration: 700,
+          ease: "outElastic(1, .6)",
+        }),
+      );
+    }
 
-    return () => animation.pause();
+    return () => animations.forEach((animation) => animation.revert());
   }, [
     activeStep,
     latestEvent?.type,
@@ -403,116 +436,61 @@ export default function Workspace({
   return (
     <section
       ref={workspaceRef}
-      className="grid min-h-[calc(100vh-76px)] grid-cols-1 gap-4 bg-trace-bg p-3 sm:p-4 lg:h-[calc(100vh-76px)] lg:min-h-[680px] lg:grid-cols-[minmax(0,1.04fr)_minmax(0,1fr)] lg:overflow-hidden xl:gap-5 xl:p-5"
+      className="grid min-w-0 grid-cols-1 gap-4 lg:h-[calc(100dvh-96px)] lg:min-h-[640px] lg:grid-cols-[minmax(0,1.04fr)_minmax(0,1fr)] xl:h-full xl:min-h-0 xl:gap-5"
     >
       {/* LEFT: example selection + editor */}
-      <div className="flex min-h-[650px] min-w-0 flex-col gap-3 lg:min-h-0">
-        <section className="relative overflow-hidden rounded-2xl border border-trace-brand/25 bg-gradient-to-br from-trace-brand/10 via-trace-panel to-trace-panel p-4 shadow-sm sm:p-5">
-          <div
-            aria-hidden="true"
-            className="absolute right-0 top-0 h-24 w-24 rounded-full bg-trace-brand/10 blur-3xl"
-          />
-
-          <div className="relative">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-trace-brand/30 bg-trace-brand/10 text-trace-brand">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="m8 5-5 7 5 7M16 5l5 7-5 7M14 3l-4 18" />
-                  </svg>
-                </span>
-
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-trace-brand">
-                    Workspace
-                  </p>
-
-                  <h2 className="text-sm font-semibold text-trace-text sm:text-base">
-                    {selectedProblem?.name ?? "Explore a program"}
-                  </h2>
-                </div>
-              </div>
-
-              <span className="rounded-lg border border-trace-brand/30 bg-trace-brand/10 px-2.5 py-1.5 text-xs font-semibold text-trace-brand">
-                JavaScript
-              </span>
+      <div className="flex min-h-[600px] min-w-0 flex-col gap-4 lg:min-h-0 xl:gap-5">
+        <section className="trace-card trace-card--gold p-4 sm:p-5">
+          <div className="mb-3.5 flex items-start justify-between gap-3 px-1">
+            <div className="min-w-0">
+              <h2 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.02em] text-trace-text">
+                {selectedProblem?.name ?? "Explore a program"}
+              </h2>
+              <p className="mt-1 text-[14px] leading-5 text-trace-text-muted">
+                {selectedProblem?.description ??
+                  "Pick an example, or write your own JavaScript below."}
+              </p>
             </div>
+            <span className="shrink-0 rounded-full bg-trace-brand/10 px-2.5 py-1 text-[12px] font-semibold text-trace-brand ring-1 ring-inset ring-trace-brand/30">
+              JavaScript
+            </span>
+          </div>
 
-            <label
-              htmlFor="trace-example"
-              className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-trace-text-subtle"
-            >
-              Start with an example
-            </label>
-
-            <select
-              id="trace-example"
-              value={selectedExample}
-              onChange={handleExampleSelect}
-              className="w-full rounded-xl border border-trace-border bg-trace-bg-soft px-3.5 py-3 text-sm text-trace-text outline-none transition focus:border-trace-brand focus:ring-2 focus:ring-trace-brand/20"
-            >
-              <option value="">Choose an example…</option>
-
-              {EXAMPLES.map((example) => (
-                <option key={example.id} value={example.id}>
+          <div
+            role="radiogroup"
+            aria-label="Examples"
+            className="flex flex-wrap gap-2"
+          >
+            {EXAMPLES.map((example) => {
+              const selected = example.id === selectedExample;
+              return (
+                <button
+                  key={example.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => handleExampleSelect(example.id)}
+                  className={`trace-press h-9 shrink-0 rounded-full px-3.5 text-[14px] font-medium ${
+                    selected
+                      ? "bg-gradient-to-b from-[#F5D76E] to-trace-brand text-trace-brand-ink shadow-[0_2px_10px_-3px_var(--trace-brand)]"
+                      : "bg-trace-surface text-trace-text ring-1 ring-inset ring-trace-border hover:bg-trace-surface-hover"
+                  }`}
+                >
                   {example.name}
-                </option>
-              ))}
-            </select>
-
-            <p className="mt-2.5 text-xs leading-5 text-trace-text-muted sm:text-sm">
-              {selectedProblem?.description ??
-                "Pick a concept to explore, or write your own supported JavaScript in the editor below."}
-            </p>
+                </button>
+              );
+            })}
           </div>
         </section>
 
         {/* Code editor */}
-        <section className="flex min-h-[440px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-trace-border bg-trace-panel shadow-[var(--trace-shadow)] lg:min-h-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-trace-border bg-trace-panel-raised px-4 py-3 sm:px-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-trace-cyan/10 text-trace-cyan">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="17"
-                  height="17"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" />
-                </svg>
-              </div>
-
-              <div>
-                <h2 className="text-sm font-semibold text-trace-text">
-                  Code editor
-                </h2>
-
-                <p className="mt-0.5 text-[11px] text-trace-text-subtle">
-                  main.js
-                </p>
-              </div>
-            </div>
-
-            <span className="inline-flex items-center gap-2 rounded-full border border-trace-cyan/25 bg-trace-cyan/10 px-2.5 py-1.5 text-[11px] font-medium text-trace-cyan">
-              <span
-                className="h-1.5 w-1.5 rounded-full bg-trace-cyan"
-                aria-hidden="true"
-              />
+        <section className="trace-card flex min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden lg:min-h-0">
+          <div className="relative flex h-11 shrink-0 items-center border-b border-trace-border px-4">
+            <WindowDots />
+            <p className="absolute left-1/2 -translate-x-1/2 text-[13px] font-medium text-trace-text-muted">
+              main.js
+            </p>
+            <span className="ml-auto text-[12px] tabular-nums text-trace-text-subtle">
               {code.split("\n").length} lines
             </span>
           </div>
@@ -526,23 +504,25 @@ export default function Workspace({
             />
           </div>
 
-          <div className="flex items-center justify-between gap-3 border-t border-trace-border bg-trace-panel-raised px-4 py-2">
-            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-trace-text-subtle">
-              TRACE editor
+          <div className="hidden shrink-0 items-center gap-4 border-t border-trace-border px-4 py-2.5 text-[12px] text-trace-text-subtle sm:flex">
+            <span>
+              <kbd>⌃</kbd> <kbd>↵</kbd> Run
             </span>
-
-            <span className="text-[10px] text-trace-text-subtle">
-              JavaScript · Monaco
+            <span>
+              <kbd>⌃</kbd> <kbd>⇧</kbd> <kbd>↵</kbd> Debug
+            </span>
+            <span className="ml-auto">
+              <kbd>←</kbd> <kbd>→</kbd> Step
             </span>
           </div>
         </section>
       </div>
 
       {/* RIGHT: event inspector + live state */}
-      <section className="flex min-h-[600px] min-w-0 flex-col overflow-hidden rounded-2xl border border-trace-cyan/30 bg-trace-panel shadow-[var(--trace-shadow)] lg:min-h-0">
-        <header className="relative flex items-center justify-between gap-3 overflow-hidden border-b border-trace-border bg-gradient-to-r from-trace-cyan/10 via-trace-panel-raised to-trace-violet/10 px-4 py-3.5 sm:px-5">
+      <section className="trace-card trace-card--blue flex min-h-[600px] min-w-0 flex-col overflow-hidden lg:min-h-0">
+        <header className="trace-card-header-blue relative flex items-center justify-between gap-3 border-b border-trace-border px-4 py-3.5 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-trace-cyan/35 bg-trace-cyan/10 text-trace-cyan">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-trace-cyan to-trace-violet text-[color:var(--trace-on-tone)] shadow-[0_1px_2px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.35)]">
               <svg
                 viewBox="0 0 24 24"
                 width="18"
@@ -562,11 +542,11 @@ export default function Workspace({
             </div>
 
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-trace-text">
+              <h2 className="font-display text-[17px] font-semibold tracking-[-0.015em] text-trace-text">
                 Program state
               </h2>
 
-              <p className="mt-0.5 text-xs text-trace-text-muted">
+              <p className="text-[13px] text-trace-text-muted">
                 {activeStep >= 0
                   ? "Inspect what happened"
                   : "Run a program to start tracing"}
@@ -575,7 +555,7 @@ export default function Workspace({
           </div>
 
           <span
-            className={`inline-flex shrink-0 items-center gap-2 rounded-full border ${panelTone.border} ${panelTone.surface} px-2.5 py-1.5 text-[10px] font-semibold tracking-wide ${panelTone.text}`}
+            className={`inline-flex shrink-0 items-center gap-2 rounded-full ${panelTone.surface} px-3 py-1.5 text-[13px] font-semibold tabular-nums ring-1 ring-inset ${panelTone.ring} ${panelTone.text}`}
           >
             <span
               className={`h-1.5 w-1.5 rounded-full ${panelTone.dot}`}
@@ -583,23 +563,22 @@ export default function Workspace({
             />
 
             {error
-              ? "ERROR"
+              ? "Error"
               : activeStep >= 0
-                ? `STEP ${activeStep + 1} / ${events.length}`
-                : "READY"}
+                ? `Step ${activeStep + 1} of ${events.length}`
+                : "Ready"}
           </span>
         </header>
 
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-3 sm:p-4">
+        <div className="min-h-0 flex-1 space-y-7 overflow-y-auto p-4 sm:p-5">
           {/* Active event inspector */}
           <section aria-labelledby="trace-current-event">
             <SectionHeading
-              eyebrow="Execution inspector"
-              title="What just happened?"
+              title="What just happened"
               trailing={
                 latestEvent && (
                   <span
-                    className={`rounded-md border ${eventTone.border} ${eventTone.surface} px-2 py-1 text-[10px] font-semibold ${eventTone.text}`}
+                    className={`rounded-full ${eventTone.surface} px-2.5 py-1 text-[12px] font-semibold ${eventTone.text}`}
                   >
                     {eventTone.label}
                   </span>
@@ -608,11 +587,9 @@ export default function Workspace({
             />
 
             <div
-              className={`rounded-xl border ${
-                latestEvent ? eventTone.border : "border-trace-border"
-              } ${
-                latestEvent ? eventTone.surface : "bg-trace-panel-raised"
-              } p-3.5 sm:p-4`}
+              className={`trace-event-card rounded-2xl ${
+                latestEvent ? `${eventTone.surface} ring-1 ring-inset ${eventTone.ring}` : "bg-trace-surface"
+              } p-4`}
             >
               {!latestEvent ? (
                 <div className="flex items-start gap-3">
@@ -646,7 +623,7 @@ export default function Workspace({
               ) : (
                 <div className="flex items-start gap-3">
                   <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${eventTone.border} bg-trace-panel text-base font-bold ${eventTone.text}`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${eventTone.dot} text-[17px] font-bold text-[color:var(--trace-on-tone)] shadow-[0_4px_12px_-4px_rgba(0,0,0,0.35)]`}
                   >
                     <EventGlyph type={latestEvent.type} />
                   </span>
@@ -655,18 +632,16 @@ export default function Workspace({
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <h4
                         id="trace-current-event"
-                        className={`text-sm font-semibold ${eventTone.text}`}
+                        className={`text-[17px] font-semibold tracking-[-0.01em] ${eventTone.text}`}
                       >
                         {getEventTitle(latestEvent)}
                       </h4>
 
-                      <span className="rounded-md border border-trace-border bg-trace-panel/70 px-2 py-1 font-mono text-[10px] text-trace-text-subtle">
-                        #{activeStep + 1}
-                      </span>
+
                     </div>
 
                     {transition ? (
-                      <div className="mt-3 rounded-lg border border-trace-border/80 bg-trace-panel/75 p-3">
+                      <div className="mt-3 rounded-xl bg-trace-panel p-3 shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
                         <p
                           className="mb-2 truncate font-mono text-xs font-semibold text-trace-text"
                           title={transition.target}
@@ -676,12 +651,12 @@ export default function Workspace({
 
                         <div className="flex items-center gap-2">
                           {transition.hasBefore && (
-                            <div className="min-w-0 flex-1 rounded-lg border border-trace-border bg-trace-bg-soft px-2.5 py-2">
-                              <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.14em] text-trace-text-subtle">
+                            <div className="min-w-0 flex-1 rounded-lg bg-trace-surface px-3 py-2">
+                              <p className="mb-0.5 text-[12px] text-trace-text-subtle">
                                 Before
                               </p>
 
-                              <p className="break-all font-mono text-sm text-trace-text-muted">
+                              <p className="break-all font-mono text-[17px] text-trace-text-muted line-through decoration-trace-text-subtle/50">
                                 {formatValue(transition.before)}
                               </p>
                             </div>
@@ -698,25 +673,25 @@ export default function Workspace({
                             {transition.hasBefore ? "→" : "↳"}
                           </span>
 
-                          <div className="min-w-0 flex-1 rounded-lg border border-trace-green/30 bg-trace-green/10 px-2.5 py-2">
-                            <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.14em] text-trace-green">
+                          <div className="trace-after min-w-0 flex-1 rounded-lg bg-trace-green/12 px-3 py-2 ring-1 ring-inset ring-trace-green/30">
+                            <p className="mb-0.5 text-[12px] font-medium text-trace-green">
                               After
                             </p>
 
-                            <p className="break-all font-mono text-sm font-semibold text-trace-text">
+                            <p className="break-all font-mono text-[20px] font-semibold text-trace-text">
                               {formatValue(transition.after)}
                             </p>
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <p className="mt-2 break-words font-mono text-sm leading-6 text-trace-text">
+                      <p className="mt-2 break-words font-mono text-[15px] leading-6 text-trace-text">
                         {getEventDescription(latestEvent)}
                       </p>
                     )}
 
                     {(latestEvent.line ?? errorInfo?.line) != null && (
-                      <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-trace-text-subtle">
+                      <p className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-trace-text-subtle">
                         <svg
                           viewBox="0 0 24 24"
                           width="13"
@@ -743,7 +718,7 @@ export default function Workspace({
           {error && (
             <section
               aria-labelledby="trace-error-heading"
-              className="rounded-xl border border-trace-red/35 bg-trace-red/10 p-3.5 sm:p-4"
+              className="rounded-2xl bg-trace-red/10 p-4 ring-1 ring-inset ring-trace-red/30"
             >
               <div className="mb-2 flex items-center gap-2">
                 <span
@@ -755,7 +730,7 @@ export default function Workspace({
 
                 <h3
                   id="trace-error-heading"
-                  className="text-xs font-bold uppercase tracking-[0.14em] text-trace-red"
+                  className="text-[15px] font-semibold text-trace-red"
                 >
                   {errorInfo?.kind === "syntax"
                     ? "Syntax error"
@@ -789,17 +764,16 @@ export default function Workspace({
           {/* Compact, expandable variable inspection */}
           <section aria-labelledby="trace-variables-heading">
             <SectionHeading
-              eyebrow="Memory"
-              title="Variables & data"
+              title="Variables"
               trailing={
-                <span className="rounded-full border border-trace-cyan/25 bg-trace-cyan/10 px-2.5 py-1 text-[10px] font-semibold text-trace-cyan">
+                <span className="rounded-full bg-trace-surface px-2.5 py-1 text-[12px] font-medium tabular-nums text-trace-text-muted">
                   {variables.length} tracked
                 </span>
               }
             />
 
             {variables.length === 0 ? (
-              <div className="flex min-h-28 flex-col items-center justify-center rounded-xl border border-dashed border-trace-border bg-trace-panel-raised p-5 text-center">
+              <div className="flex min-h-28 flex-col items-center justify-center rounded-2xl border border-dashed border-trace-border bg-trace-panel-raised p-5 text-center">
                 <span
                   className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl border border-trace-cyan/25 bg-trace-cyan/10 text-trace-cyan"
                   aria-hidden="true"
@@ -875,33 +849,25 @@ export default function Workspace({
                   return (
                     <article
                       key={isActive ? `${name}-${activeStep}` : name}
-                      className={`group relative min-w-0 overflow-hidden rounded-xl border p-3 transition-colors duration-200 ${
+                      className={`group relative min-w-0 overflow-hidden rounded-2xl p-3.5 transition-[background-color,box-shadow] duration-300 ${
                         isActive
-                          ? "trace-value-changed border-trace-brand/70 bg-gradient-to-br from-trace-brand/12 to-trace-panel-raised"
-                          : "border-trace-border bg-trace-panel-raised hover:border-trace-border-strong"
+                          ? "trace-value-changed bg-gradient-to-br from-trace-brand/15 to-trace-panel-raised ring-1 ring-inset ring-trace-brand/50"
+                          : "bg-trace-panel-raised ring-1 ring-inset ring-trace-border"
                       } ${isStructured ? "sm:col-span-2" : ""}`}
                     >
-                      {isActive && (
-                        <span
-                          className="absolute inset-y-0 left-0 w-[3px] bg-trace-brand"
-                          aria-hidden="true"
-                        />
-                      )}
 
                       <div className="mb-2.5 flex min-w-0 items-center justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-2">
                           <span
-                            className={`max-w-[70%] truncate rounded-md border px-2 py-1 font-mono text-xs font-semibold ${
-                              isActive
-                                ? "border-trace-brand/35 bg-trace-brand/10 text-trace-brand"
-                                : "border-trace-border bg-trace-surface text-trace-text"
+                            className={`max-w-[70%] truncate font-mono text-[14px] font-semibold ${
+                              isActive ? "text-trace-brand" : "text-trace-text"
                             }`}
                             title={name}
                           >
                             {name}
                           </span>
 
-                          <span className="truncate text-[10px] text-trace-text-subtle">
+                          <span className="truncate text-[12px] text-trace-text-subtle">
                             {isArray
                               ? "Array"
                               : isObject
@@ -920,13 +886,13 @@ export default function Workspace({
                           )}
 
                           {isArray && (
-                            <span className="text-[10px] text-trace-text-subtle">
+                            <span className="text-[12px] text-trace-text-subtle">
                               {value.length} items
                             </span>
                           )}
 
                           {isObject && (
-                            <span className="text-[10px] text-trace-text-subtle">
+                            <span className="text-[12px] text-trace-text-subtle">
                               {entries.length} keys
                             </span>
                           )}
@@ -935,7 +901,7 @@ export default function Workspace({
 
                       {isArray ? (
                         value.length === 0 ? (
-                          <p className="rounded-lg bg-trace-bg-soft px-3 py-2 text-xs italic text-trace-text-muted">
+                          <p className="rounded-xl bg-trace-panel px-3 py-2 text-[13px] text-trace-text-muted">
                             Empty array
                           </p>
                         ) : (
@@ -953,10 +919,10 @@ export default function Workspace({
                                       className="flex w-[62px] flex-col items-center gap-1.5"
                                     >
                                       <div
-                                        className={`flex h-12 w-full items-center justify-center overflow-hidden rounded-lg border px-1.5 font-mono text-xs font-semibold transition-colors ${
+                                        className={`flex h-12 w-full items-center justify-center overflow-hidden rounded-xl px-1.5 font-mono text-[15px] font-semibold transition-colors ${
                                           activeCell
-                                            ? "trace-value-changed border-trace-brand bg-trace-brand/15 text-trace-brand"
-                                            : "border-trace-border bg-trace-bg-soft text-trace-text"
+                                            ? "trace-value-changed bg-trace-brand text-trace-brand-ink shadow-[0_4px_14px_-4px_var(--trace-brand)]"
+                                            : "bg-trace-panel text-trace-text shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
                                         }`}
                                         title={formatValue(item)}
                                       >
@@ -966,7 +932,7 @@ export default function Workspace({
                                       </div>
 
                                       <span
-                                        className={`font-mono text-[10px] ${
+                                        className={`font-mono text-[11px] ${
                                           activeCell
                                             ? "font-bold text-trace-brand"
                                             : "text-trace-text-subtle"
@@ -996,7 +962,7 @@ export default function Workspace({
                       ) : isObject ? (
                         <>
                           {entries.length === 0 ? (
-                            <p className="rounded-lg bg-trace-bg-soft px-3 py-2 text-xs italic text-trace-text-muted">
+                            <p className="rounded-xl bg-trace-panel px-3 py-2 text-[13px] text-trace-text-muted">
                               Empty object
                             </p>
                           ) : (
@@ -1010,10 +976,10 @@ export default function Workspace({
                                   return (
                                     <div
                                       key={property}
-                                      className={`flex min-w-0 items-start justify-between gap-3 rounded-lg border px-2.5 py-2 ${
+                                      className={`flex min-w-0 items-start justify-between gap-3 rounded-xl px-3 py-2 ${
                                         activeProperty
-                                          ? "border-trace-brand/50 bg-trace-brand/10"
-                                          : "border-trace-border/80 bg-trace-bg-soft"
+                                          ? "bg-trace-brand/15 ring-1 ring-inset ring-trace-brand/40"
+                                          : "bg-trace-panel"
                                       }`}
                                     >
                                       <span
@@ -1055,16 +1021,13 @@ export default function Workspace({
                       ) : (
                         <div className="flex items-end justify-between gap-3">
                           <span
-                            className={`min-w-0 break-all font-mono text-xl font-semibold tracking-tight sm:text-2xl ${
+                            className={`min-w-0 break-all font-mono text-[28px] font-semibold leading-none tracking-tight ${
                               isActive ? "text-trace-brand" : "text-trace-text"
                             }`}
                           >
                             {formatValue(value)}
                           </span>
 
-                          <span className="shrink-0 pb-0.5 text-[9px] font-semibold uppercase tracking-[0.13em] text-trace-text-subtle">
-                            Current
-                          </span>
                         </div>
                       )}
                     </article>
@@ -1077,36 +1040,17 @@ export default function Workspace({
           {/* Dedicated console view, derived from existing trace events */}
           <section aria-labelledby="trace-console-heading">
             <SectionHeading
-              eyebrow="Output"
               title="Console"
               trailing={
-                <span className="rounded-full border border-trace-green/25 bg-trace-green/10 px-2.5 py-1 text-[10px] font-semibold text-trace-green">
+                <span className="rounded-full bg-trace-surface px-2.5 py-1 text-[12px] font-medium tabular-nums text-trace-text-muted">
                   {visibleConsoleEvents.length}{" "}
                   {visibleConsoleEvents.length === 1 ? "message" : "messages"}
                 </span>
               }
             />
 
-            <div className="overflow-hidden rounded-xl border border-trace-border bg-trace-bg-soft">
-              <div className="flex items-center gap-1.5 border-b border-trace-border bg-trace-panel-raised px-3 py-2">
-                <span
-                  className="h-2 w-2 rounded-full bg-trace-red"
-                  aria-hidden="true"
-                />
-                <span
-                  className="h-2 w-2 rounded-full bg-trace-brand"
-                  aria-hidden="true"
-                />
-                <span
-                  className="h-2 w-2 rounded-full bg-trace-green"
-                  aria-hidden="true"
-                />
-                <span className="ml-2 text-[10px] font-medium text-trace-text-subtle">
-                  stdout
-                </span>
-              </div>
-
-              <div className="max-h-40 min-h-[68px] overflow-y-auto p-3 font-mono text-xs">
+            <div className="overflow-hidden rounded-2xl bg-trace-bg-soft ring-1 ring-inset ring-trace-border">
+              <div className="max-h-44 min-h-[64px] overflow-y-auto px-4 py-3 font-mono text-[13px]">
                 {visibleConsoleEvents.length === 0 ? (
                   <p className="text-trace-text-subtle">
                     <span className="mr-2 text-trace-green" aria-hidden="true">
@@ -1148,12 +1092,12 @@ export default function Workspace({
 
           {/* Compact execution summary */}
           <section aria-labelledby="trace-summary-heading">
-            <SectionHeading eyebrow="At a glance" title="Execution summary" />
+            <SectionHeading title="Summary" />
 
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl border border-trace-cyan/25 bg-trace-cyan/5 p-3">
+              <div className="rounded-2xl bg-gradient-to-br from-trace-cyan/10 to-transparent p-3.5 ring-1 ring-inset ring-trace-cyan/25">
                 <span
-                  className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-trace-cyan/10 text-trace-cyan"
+                  className="mb-3 flex h-7 w-7 items-center justify-center rounded-full bg-trace-cyan text-[color:var(--trace-on-tone)]"
                   aria-hidden="true"
                 >
                   <svg
@@ -1170,18 +1114,18 @@ export default function Workspace({
                   </svg>
                 </span>
 
-                <p className="text-[10px] leading-4 text-trace-text-muted">
+                <p className="text-[13px] leading-4 text-trace-text-muted">
                   Events
                 </p>
 
-                <p className="mt-1 text-xl font-semibold tabular-nums text-trace-text">
+                <p className="mt-1 font-display text-[28px] font-semibold leading-none tracking-tight tabular-nums text-trace-text">
                   {events.length}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-trace-violet/25 bg-trace-violet/5 p-3">
+              <div className="rounded-2xl bg-gradient-to-br from-trace-violet/10 to-transparent p-3.5 ring-1 ring-inset ring-trace-violet/25">
                 <span
-                  className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-trace-violet/10 text-trace-violet"
+                  className="mb-3 flex h-7 w-7 items-center justify-center rounded-full bg-trace-violet text-[color:var(--trace-on-tone)]"
                   aria-hidden="true"
                 >
                   <svg
@@ -1201,18 +1145,18 @@ export default function Workspace({
                   </svg>
                 </span>
 
-                <p className="text-[10px] leading-4 text-trace-text-muted">
+                <p className="text-[13px] leading-4 text-trace-text-muted">
                   Variables
                 </p>
 
-                <p className="mt-1 text-xl font-semibold tabular-nums text-trace-text">
+                <p className="mt-1 font-display text-[28px] font-semibold leading-none tracking-tight tabular-nums text-trace-text">
                   {variables.length}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-trace-green/25 bg-trace-green/5 p-3">
+              <div className="rounded-2xl bg-gradient-to-br from-trace-green/10 to-transparent p-3.5 ring-1 ring-inset ring-trace-green/25">
                 <span
-                  className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-trace-green/10 text-trace-green"
+                  className="mb-3 flex h-7 w-7 items-center justify-center rounded-full bg-trace-green text-[color:var(--trace-on-tone)]"
                   aria-hidden="true"
                 >
                   <svg
@@ -1229,11 +1173,11 @@ export default function Workspace({
                   </svg>
                 </span>
 
-                <p className="text-[10px] leading-4 text-trace-text-muted">
+                <p className="text-[13px] leading-4 text-trace-text-muted">
                   Console logs
                 </p>
 
-                <p className="mt-1 text-xl font-semibold tabular-nums text-trace-text">
+                <p className="mt-1 font-display text-[28px] font-semibold leading-none tracking-tight tabular-nums text-trace-text">
                   {visibleConsoleEvents.length}
                 </p>
               </div>
@@ -1241,13 +1185,13 @@ export default function Workspace({
           </section>
         </div>
 
-        <footer className="flex items-center justify-between gap-3 border-t border-trace-border bg-trace-panel-raised px-4 py-2.5 sm:px-5">
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-trace-text-subtle">
+        <footer className="flex items-center justify-between gap-3 border-t border-trace-border px-4 py-2.5 sm:px-5">
+          <span className="text-[12px] text-trace-text-subtle">
             TRACE engine
           </span>
 
           <span
-            className={`inline-flex items-center gap-2 text-[11px] font-medium ${
+            className={`inline-flex items-center gap-2 text-[12px] font-medium ${
               error ? "text-trace-red" : "text-trace-green"
             }`}
           >

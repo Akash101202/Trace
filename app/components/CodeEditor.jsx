@@ -5,8 +5,11 @@ import Editor from "@monaco-editor/react";
 import { useTraceTheme } from "./ThemeProvider";
 
 function getLineTone(type) {
-  // Keep execution cyan; make errors red.
-  return type === "error" ? "red" : "cyan";
+  if (type === "error") return "red";
+  if (type === "console-log") return "green";
+  if (type?.startsWith("function-")) return "violet";
+  if (["condition", "branch", "loop-iteration", "loop-complete"].includes(type)) return "cyan";
+  return "gold";
 }
 
 function defineTraceThemes(monaco) {
@@ -154,6 +157,11 @@ export default function CodeEditor({
     // Set the correct theme immediately when the editor mounts.
     monaco.editor.setTheme(theme === "light" ? "trace-light" : "trace-dark");
 
+    // Ctrl/Cmd+Enter runs, with Shift it debugs (handled by Visualizer).
+    const send = (mode) => window.dispatchEvent(new CustomEvent("trace-execute", { detail: mode }));
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => send("run"));
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => send("debug"));
+
     setEditorReady(true);
   }
 
@@ -187,7 +195,7 @@ export default function CodeEditor({
             options: {
               isWholeLine: true,
               className: `trace-current-line trace-tone-${tone}`,
-              linesDecorationsClassName: `trace-line-marker trace-marker-${tone}`,
+              linesDecorationsClassName: `trace-line-marker trace-tone-${tone}`,
             },
           },
         ]
@@ -219,7 +227,7 @@ export default function CodeEditor({
           fontSize: 14,
           lineHeight: 24,
           fontFamily:
-            'var(--font-geist-mono), "SFMono-Regular", Consolas, monospace',
+            '"SF Mono", SFMono-Regular, ui-monospace, var(--font-geist-mono), Menlo, monospace',
           fontLigatures: true,
 
           padding: { top: 18, bottom: 18 },
@@ -227,7 +235,8 @@ export default function CodeEditor({
           automaticLayout: true,
           wordWrap: "on",
 
-          renderLineHighlight: "all",
+          // While tracing, only the execution line is highlighted.
+          renderLineHighlight: activeLine ? "none" : "line",
           renderWhitespace: "selection",
           smoothScrolling: true,
           cursorBlinking: "smooth",
@@ -241,9 +250,9 @@ export default function CodeEditor({
             bracketPairs: true,
           },
 
-          stickyScroll: { enabled: true },
+          stickyScroll: { enabled: false },
           folding: true,
-          showFoldingControls: "always",
+          showFoldingControls: "mouseover",
           matchBrackets: "always",
 
           accessibilitySupport: "auto",

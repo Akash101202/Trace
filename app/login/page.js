@@ -181,7 +181,7 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-xs leading-6 text-[#81765A]">
-            By continuing, you'll be able to keep track of your challenges,
+            By continuing, you&apos;ll be able to keep track of your challenges,
             review your attempts and build your programming skills.
           </p>
         </div>

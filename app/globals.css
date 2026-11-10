@@ -1,11 +1,15 @@
 @import "tailwindcss";
 
 /* =========================================================
-   TRACE DESIGN SYSTEM
-   Components should use semantic tokens instead of fixed
-   zinc/gray colors wherever practical.
+   TRACE DESIGN SYSTEM — Apple-style tokens
+   Token names are unchanged so every component adapts.
+   Colours follow Apple's system palette (dark) and its
+   accessible variants (light). Meaning stays the same:
+   brand/gold = values, cyan = control flow, violet = functions,
+   green = console, red = errors, accent (blue) = actions.
    ========================================================= */
 
+/* Original TRACE palette: deep navy (dark) and cool blue-white (light). */
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -26,13 +30,15 @@
   --trace-text-muted: #adbacd;
   --trace-text-subtle: #8593a9;
 
+  --trace-accent: #48d8ef;
+  --trace-accent-ink: #071a1f;
+
   --trace-brand: #f1ca59;
   --trace-brand-strong: #ffdc78;
   --trace-brand-ink: #211907;
   --trace-brand-soft: rgba(241, 202, 89, 0.13);
 
   --trace-cyan: #48d8ef;
-  --trace-cyan-strong: #75e8f8;
   --trace-cyan-soft: rgba(72, 216, 239, 0.12);
 
   --trace-violet: #ad98ff;
@@ -49,6 +55,13 @@
 
   --trace-scroll-thumb: #35445a;
   --trace-shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+  --trace-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --trace-glass: rgba(8, 11, 18, 0.78);
+  --trace-on-tone: #0b1220;
+
+  /* Card gradient strengths */
+  --trace-wash-gold: 11%;
+  --trace-wash-cyan: 10%;
 
   --background: var(--trace-bg);
   --foreground: var(--trace-text);
@@ -73,13 +86,15 @@
   --trace-text-muted: #485a73;
   --trace-text-subtle: #657790;
 
+  --trace-accent: #007f9f;
+  --trace-accent-ink: #ffffff;
+
   --trace-brand: #bd8500;
   --trace-brand-strong: #966900;
   --trace-brand-ink: #ffffff;
   --trace-brand-soft: rgba(189, 133, 0, 0.12);
 
   --trace-cyan: #007f9f;
-  --trace-cyan-strong: #00657f;
   --trace-cyan-soft: rgba(0, 127, 159, 0.1);
 
   --trace-violet: #7250cc;
@@ -96,12 +111,17 @@
 
   --trace-scroll-thumb: #bac8da;
   --trace-shadow: 0 14px 34px rgba(35, 54, 83, 0.09);
+  --trace-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --trace-glass: rgba(243, 246, 252, 0.8);
+  --trace-on-tone: #ffffff;
+
+  --trace-wash-gold: 9%;
+  --trace-wash-cyan: 7%;
 
   --background: var(--trace-bg);
   --foreground: var(--trace-text);
 }
 
-/* Tailwind v4 semantic color utilities */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -120,136 +140,219 @@
   --color-trace-text-muted: var(--trace-text-muted);
   --color-trace-text-subtle: var(--trace-text-subtle);
 
+  --color-trace-accent: var(--trace-accent);
+  --color-trace-accent-ink: var(--trace-accent-ink);
   --color-trace-brand: var(--trace-brand);
+  --color-trace-brand-ink: var(--trace-brand-ink);
   --color-trace-cyan: var(--trace-cyan);
   --color-trace-violet: var(--trace-violet);
   --color-trace-green: var(--trace-green);
   --color-trace-red: var(--trace-red);
   --color-trace-orange: var(--trace-orange);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* SF Pro on Apple devices; Inter is the closest match elsewhere. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-inter), "Helvetica Neue", sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", SFMono-Regular, ui-monospace, var(--font-geist-mono), Menlo, monospace;
+
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 /* =========================================================
-   GLOBAL BASE
+   GLOBAL BASE — layered so Tailwind utilities can override
+   (unlayered rules would beat every utility class).
    ========================================================= */
 
-* {
-  box-sizing: border-box;
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-height: 100%;
+    background: var(--trace-bg);
+  }
+
+  body {
+    min-height: 100%;
+    margin: 0;
+    background: var(--trace-bg);
+    color: var(--trace-text);
+    font-family: var(--font-sans);
+    letter-spacing: -0.006em;
+    -webkit-font-smoothing: antialiased;
+    transition:
+      background-color 300ms var(--ease-apple),
+      color 300ms var(--ease-apple);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    letter-spacing: inherit;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--trace-accent) 28%, transparent);
+    color: var(--trace-text);
+  }
+
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--trace-accent) 35%, transparent);
+  }
+
+  kbd {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    min-width: 1.6em;
+    padding: 1px 5px;
+    border-radius: 5px;
+    text-align: center;
+    color: var(--trace-text-muted);
+    background: var(--trace-surface);
+    box-shadow: inset 0 -1px 0 var(--trace-border-strong);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--trace-scroll-thumb) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--trace-scroll-thumb);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
 }
 
-html {
-  min-height: 100%;
-  background: var(--trace-bg);
-  color-scheme: dark;
+/* =========================================================
+   MATERIALS
+   ========================================================= */
+
+/* Frosted toolbar material, with a solid fallback. */
+.trace-glass {
+  background: var(--trace-panel);
 }
 
-html[data-theme="light"] {
-  color-scheme: light;
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .trace-glass {
+    background: var(--trace-glass);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+  }
 }
 
-body {
-  min-height: 100%;
-  margin: 0;
-  background: var(--trace-bg);
-  color: var(--trace-text);
-  font-family: var(--font-geist-sans), sans-serif;
+/* Cards: tinted border + soft gradient wash, as in the original design.
+   Default is neutral; modifiers add the gold / blue character. */
+.trace-card {
+  position: relative;
+  border-radius: 20px;
+  border: 1px solid var(--trace-border);
+  background: var(--trace-panel);
+  box-shadow: var(--trace-shadow), var(--trace-highlight);
+}
+
+/* Gold: warm wash from the top-left corner. */
+.trace-card--gold {
+  border-color: color-mix(in srgb, var(--trace-brand) 28%, transparent);
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--trace-brand) 10%, transparent), transparent 55%),
+    linear-gradient(135deg, color-mix(in srgb, var(--trace-brand) var(--trace-wash-gold), var(--trace-panel)) 0%, var(--trace-panel) 60%);
+}
+
+/* Blue: cyan into violet, like the original state panel. */
+.trace-card--blue {
+  border-color: color-mix(in srgb, var(--trace-cyan) 32%, transparent);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--trace-cyan) var(--trace-wash-cyan), var(--trace-panel)) 0%, var(--trace-panel) 38%, var(--trace-panel) 70%, color-mix(in srgb, var(--trace-violet) 7%, var(--trace-panel)) 100%);
+}
+
+/* Gold and blue together: gold top-left, cyan bottom-right. */
+.trace-card--duo {
+  border-color: color-mix(in srgb, var(--trace-cyan) 26%, transparent);
+  background:
+    linear-gradient(150deg, color-mix(in srgb, var(--trace-brand) var(--trace-wash-gold), var(--trace-panel)) 0%, var(--trace-panel) 35%, var(--trace-panel) 65%, color-mix(in srgb, var(--trace-cyan) var(--trace-wash-cyan), var(--trace-panel)) 100%);
+}
+
+/* Header strip for blue cards: cyan → raised → violet. */
+.trace-card-header-blue {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--trace-cyan) 10%, transparent), var(--trace-panel-raised) 50%, color-mix(in srgb, var(--trace-violet) 10%, transparent));
+}
+
+/* TRACE signature gradient bar. */
+.trace-signature {
+  background: linear-gradient(90deg, #bd941f 0%, #f5d76e 27%, #48d8ef 65%, #ad98ff 100%);
+}
+
+.trace-press {
   transition:
-    background-color 180ms ease,
-    color 180ms ease;
+    transform 120ms var(--ease-apple),
+    background-color 200ms var(--ease-apple),
+    color 200ms var(--ease-apple),
+    box-shadow 200ms var(--ease-apple),
+    opacity 200ms var(--ease-apple);
 }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-button {
-  -webkit-tap-highlight-color: transparent;
-}
-
-::selection {
-  background: var(--trace-cyan-soft);
-  color: var(--trace-text);
-}
-
-:focus-visible {
-  outline: 2px solid var(--trace-cyan);
-  outline-offset: 3px;
-}
-
-/* Consistent scrollbars across editors, panels and the page */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--trace-scroll-thumb) transparent;
-}
-
-*::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
-}
-
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: var(--trace-scroll-thumb);
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background-clip: padding-box;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: var(--trace-text-subtle);
-  background-clip: padding-box;
+.trace-press:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 /* =========================================================
    MONACO EXECUTION HIGHLIGHTS
    ========================================================= */
 
-.monaco-editor .trace-current-line.trace-tone-gold {
-  background: var(--trace-brand-soft) !important;
-}
-
-.monaco-editor .trace-current-line.trace-tone-cyan {
-  background: var(--trace-cyan-soft) !important;
-}
-
-.monaco-editor .trace-current-line.trace-tone-violet {
-  background: var(--trace-violet-soft) !important;
-}
-
-.monaco-editor .trace-current-line.trace-tone-red {
-  background: var(--trace-red-soft) !important;
+.monaco-editor .trace-current-line {
+  background: var(--tone-soft) !important;
+  border-radius: 6px;
 }
 
 .monaco-editor .trace-line-marker {
   box-sizing: border-box;
-  margin-left: 3px;
+  margin-left: 4px;
+  width: 3px !important;
+  border-radius: 3px;
+  background: var(--tone);
 }
 
-.monaco-editor .trace-line-marker.trace-marker-gold {
-  border-left: 3px solid var(--trace-brand);
+.trace-tone-gold {
+  --tone: var(--trace-brand);
+  --tone-soft: var(--trace-brand-soft);
+}
+.trace-tone-cyan {
+  --tone: var(--trace-cyan);
+  --tone-soft: var(--trace-cyan-soft);
+}
+.trace-tone-violet {
+  --tone: var(--trace-violet);
+  --tone-soft: var(--trace-violet-soft);
+}
+.trace-tone-green {
+  --tone: var(--trace-green);
+  --tone-soft: var(--trace-green-soft);
+}
+.trace-tone-red {
+  --tone: var(--trace-red);
+  --tone-soft: var(--trace-red-soft);
 }
 
-.monaco-editor .trace-line-marker.trace-marker-cyan {
-  border-left: 3px solid var(--trace-cyan);
-}
-
-.monaco-editor .trace-line-marker.trace-marker-violet {
-  border-left: 3px solid var(--trace-violet);
-}
-
-.monaco-editor .trace-line-marker.trace-marker-red {
-  border-left: 3px solid var(--trace-red);
-}
-
-/* Respect the user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -258,9 +361,5 @@ button {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-
-  .trace-value-changed {
-    animation: none !important;
   }
 }

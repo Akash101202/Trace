@@ -118,13 +118,11 @@ export default function Home() {
   useEffect(() => {
     if (!isPlaying || !debugMode) return;
 
-    if (activeStep >= execution.events.length - 1) {
-      setIsPlaying(false);
-      return;
-    }
-
     const timer = setTimeout(() => {
-      setActiveStep((current) => current + 1);
+      const last = execution.events.length - 1;
+      const next = Math.min(activeStep + 1, last);
+      setActiveStep(next);
+      if (next >= last) setIsPlaying(false);
     }, 800);
 
     return () => clearTimeout(timer);
@@ -142,6 +140,11 @@ export default function Home() {
     if (activeStep >= execution.events.length - 1) return;
 
     setIsPlaying((playing) => !playing);
+  }
+
+  function handleStepBack() {
+    setIsPlaying(false);
+    setActiveStep((current) => Math.max(0, current - 1));
   }
 
   function handleSelectStep(index) {
@@ -163,17 +166,60 @@ export default function Home() {
     execution.events.length > 0 &&
     activeStep < execution.events.length - 1;
 
+  const canBack = debugMode && activeStep > 0;
+
+  // Keyboard: arrows step, Space plays, Ctrl+Enter runs, Ctrl+Shift+Enter debugs.
+  useEffect(() => {
+    function onKeyDown(event) {
+      const typing =
+        event.target instanceof HTMLElement &&
+        (["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName) ||
+          event.target.closest(".monaco-editor"));
+      const mod = event.ctrlKey || event.metaKey;
+
+      if (mod && event.key === "Enter") {
+        if (typing) return; // the editor dispatches its own event
+        event.preventDefault();
+        handleExecute(event.shiftKey ? "debug" : "run");
+        return;
+      }
+      if (typing || mod || event.altKey || !debugMode) return;
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        handleStep();
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        handleStepBack();
+      } else if (event.key === " " && !(event.target instanceof HTMLButtonElement)) {
+        event.preventDefault();
+        handleTogglePlayback();
+      }
+    }
+    function onEditorExecute(event) {
+      handleExecute(event.detail);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("trace-execute", onEditorExecute);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("trace-execute", onEditorExecute);
+    };
+  });
+
   const canPlay =
     debugMode &&
     execution.events.length > 0 &&
     activeStep < execution.events.length - 1;
 
   return (
-    <main className="min-h-screen bg-[#080807]">
+    <main className="min-h-dvh bg-trace-bg">
       <Header
         onRun={handleRun}
         onDebug={handleDebug}
         onStep={handleStep}
+        onStepBack={handleStepBack}
+        canBack={canBack}
         onReset={handleReset}
         onTogglePlayback={handleTogglePlayback}
         canStep={canStep}
@@ -182,20 +228,23 @@ export default function Home() {
         debugMode={debugMode}
       />
 
-      <Workspace
-        code={code}
-        onChange={setCode}
-        execution={execution}
-        activeStep={activeStep}
-        error={error}
-        errorInfo={errorInfo}
-      />
+      {/* Editor + state on the left; every step in the sidebar. */}
+      <div className="mx-auto grid w-full max-w-[1920px] grid-cols-1 gap-4 p-3 sm:p-4 xl:h-[calc(100dvh-65px)] xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-5 xl:p-5">
+        <Workspace
+          code={code}
+          onChange={setCode}
+          execution={execution}
+          activeStep={activeStep}
+          error={error}
+          errorInfo={errorInfo}
+        />
 
-      <ExecutionPanel
-        events={execution.events}
-        activeStep={activeStep}
-        onSelectStep={handleSelectStep}
-      />
+        <ExecutionPanel
+          events={execution.events}
+          activeStep={activeStep}
+          onSelectStep={handleSelectStep}
+        />
+      </div>
     </main>
   );
 }

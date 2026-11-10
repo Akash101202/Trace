@@ -1,229 +1,200 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import { animate } from "animejs";
 import { useTraceTheme } from "./ThemeProvider";
 
+const PATHS = {
+  reset: (
+    <>
+      <path d="M3 11a9 9 0 1 1 2.6 6.4" />
+      <path d="M3 4v7h7" />
+    </>
+  ),
+  play: <path d="M7 4.8v14.4a1 1 0 0 0 1.5.86l11.6-7.2a1 1 0 0 0 0-1.72L8.5 3.94A1 1 0 0 0 7 4.8Z" fill="currentColor" stroke="none" />,
+  pause: (
+    <>
+      <rect x="6" y="4" width="4" height="16" rx="1.4" fill="currentColor" stroke="none" />
+      <rect x="14" y="4" width="4" height="16" rx="1.4" fill="currentColor" stroke="none" />
+    </>
+  ),
+  next: (
+    <>
+      <path d="M5 5.6v12.8a.9.9 0 0 0 1.4.76l9.4-6.4a.9.9 0 0 0 0-1.52L6.4 4.84A.9.9 0 0 0 5 5.6Z" fill="currentColor" stroke="none" />
+      <rect x="17.5" y="5" width="2.4" height="14" rx="1.2" fill="currentColor" stroke="none" />
+    </>
+  ),
+  back: (
+    <>
+      <path d="M19 5.6v12.8a.9.9 0 0 1-1.4.76l-9.4-6.4a.9.9 0 0 1 0-1.52l9.4-6.4A.9.9 0 0 1 19 5.6Z" fill="currentColor" stroke="none" />
+      <rect x="4.1" y="5" width="2.4" height="14" rx="1.2" fill="currentColor" stroke="none" />
+    </>
+  ),
+  debug: (
+    <>
+      <path d="M9 8 7 6M15 8l2-2M8 13H4M20 13h-4M8 18l-2 2M16 18l2 2" />
+      <rect x="8" y="7" width="8" height="12" rx="4" />
+      <path d="M12 4v3M10 4h4" />
+    </>
+  ),
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" />
+    </>
+  ),
+  moon: <path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" />,
+};
+
 function Icon({ name, size = 18 }) {
-  const common = {
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.8,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-    "aria-hidden": true,
-  };
-
-  const paths = {
-    reset: (
-      <>
-        <path d="M3 11a9 9 0 1 1 2.6 6.4" />
-        <path d="M3 4v7h7" />
-      </>
-    ),
-    play: <path d="m8 5 12 7-12 7z" fill="currentColor" stroke="none" />,
-    pause: (
-      <>
-        <rect
-          x="6"
-          y="4"
-          width="4"
-          height="16"
-          rx="1"
-          fill="currentColor"
-          stroke="none"
-        />
-        <rect
-          x="14"
-          y="4"
-          width="4"
-          height="16"
-          rx="1"
-          fill="currentColor"
-          stroke="none"
-        />
-      </>
-    ),
-    next: (
-      <>
-        <path d="m5 5 11 7-11 7z" fill="currentColor" stroke="none" />
-        <path d="M19 5v14" strokeWidth="2.5" />
-      </>
-    ),
-    debug: (
-      <>
-        <path d="M9 8 7 6M15 8l2-2M8 13H4M20 13h-4M8 18l-2 2M16 18l2 2" />
-        <rect x="8" y="7" width="8" height="12" rx="4" />
-        <path d="M12 4v3M10 4h4" />
-        <circle cx="10.5" cy="11" r=".5" fill="currentColor" />
-        <circle cx="13.5" cy="11" r=".5" fill="currentColor" />
-      </>
-    ),
-    sun: (
-      <>
-        <circle cx="12" cy="12" r="4" />
-        <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" />
-      </>
-    ),
-    moon: <path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" />,
-  };
-
-  return <svg {...common}>{paths[name]}</svg>;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {PATHS[name]}
+    </svg>
+  );
 }
+
+const segment =
+  "trace-press flex h-9 w-10 items-center justify-center rounded-full text-trace-text " +
+  "hover:bg-trace-surface-hover disabled:pointer-events-none disabled:opacity-30";
 
 export default function Header({
   onRun,
   onDebug,
   onStep,
+  onStepBack,
   onReset,
   onTogglePlayback,
   canStep,
+  canBack,
   canPlay,
   isPlaying,
   debugMode,
+  stepLabel,
 }) {
   const { theme, toggleTheme } = useTraceTheme();
   const isDark = theme === "dark";
+  const transportRef = useRef(null);
 
-  const iconButton =
-    "flex h-10 w-10 items-center justify-center rounded-xl border " +
-    "transition-all duration-200 active:scale-95 " +
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-trace-cyan " +
-    "disabled:cursor-not-allowed disabled:opacity-35";
-
-  const neutral =
-    `${iconButton} border-trace-border bg-trace-panel ` +
-    "text-trace-text-muted hover:border-trace-border-strong " +
-    "hover:bg-trace-surface-hover hover:text-trace-text";
+  // Playback controls spring in when debugging starts.
+  useEffect(() => {
+    if (!debugMode || !transportRef.current) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const animation = animate(transportRef.current, {
+      opacity: [0, 1],
+      scale: [0.9, 1],
+      duration: 520,
+      ease: "outBack(1.8)",
+    });
+    return () => animation.revert();
+  }, [debugMode]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-trace-border bg-trace-bg/95 backdrop-blur-xl">
-      {/* TRACE signature gradient */}
-      <div
-        className="h-[3px]"
-        aria-hidden="true"
-        style={{
-          background:
-            "linear-gradient(90deg, #bd941f 0%, #f5d76e 27%, #48d8ef 65%, #ad98ff 100%)",
-        }}
-      />
-
-      <div className="mx-auto flex min-h-[64px] w-full max-w-[1800px] items-center justify-between gap-3 px-3 py-2 sm:px-5 md:px-6">
+    <header className="trace-glass sticky top-0 z-30 border-b border-trace-border/70">
+      <div className="trace-signature h-[3px]" aria-hidden="true" />
+      <div className="mx-auto flex h-[61px] w-full max-w-[1920px] items-center gap-3 px-3 sm:px-5">
         {/* Brand */}
-        <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#F5D76E] to-[#A47B19] text-xl font-black text-[#211907] shadow-md shadow-trace-brand/15">
+        <div className="flex min-w-0 shrink-0 items-center gap-2.5">
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#F5D76E] to-[#A47B19] text-[17px] font-black text-[#211907] shadow-[0_1px_2px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.5)]">
             T
           </div>
-
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-extrabold tracking-[0.18em] text-trace-text sm:text-xl">
-              TRACE
-            </h1>
-
-            {debugMode && (
-              <span
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-trace-violet/40 bg-trace-violet/10 text-trace-violet"
-                title="Debug mode"
-                aria-label="Debug mode active"
-              >
-                <Icon name="debug" size={15} />
-              </span>
-            )}
-          </div>
+          <h1 className="hidden font-display text-[18px] font-bold tracking-[0.06em] text-trace-text sm:block">
+            TRACE
+          </h1>
         </div>
 
-        {/* Icon-only media-player controls */}
-        <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-2">
-          {/* Reset */}
+        {/* Playback (debug mode) */}
+        <div className="flex flex-1 justify-center">
+          {debugMode && (
+            <div ref={transportRef} className="flex items-center gap-2">
+              <div
+                role="group"
+                aria-label="Playback"
+                className="flex items-center gap-0.5 rounded-full bg-trace-surface p-[3px] shadow-[inset_0_0_0_0.5px_var(--trace-border-strong)]"
+              >
+                <button type="button" onClick={onStepBack} disabled={!canBack || isPlaying} className={segment} aria-label="Previous step" title="Previous step (←)">
+                  <Icon name="back" size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={onTogglePlayback}
+                  disabled={!canPlay && !isPlaying}
+                  className={`${segment} w-11 bg-trace-panel shadow-[0_1px_3px_rgba(0,0,0,0.15)] hover:bg-trace-panel`}
+                  aria-label={isPlaying ? "Pause playback" : "Play playback"}
+                  title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+                >
+                  <Icon name={isPlaying ? "pause" : "play"} size={16} />
+                </button>
+                <button type="button" onClick={onStep} disabled={!canStep || isPlaying} className={segment} aria-label="Next execution step" title="Next step (→)">
+                  <Icon name="next" size={15} />
+                </button>
+              </div>
+              {stepLabel && (
+                <span className="hidden font-mono text-[13px] tabular-nums text-trace-text-subtle md:inline">
+                  {stepLabel}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <button
             type="button"
             onClick={onReset}
-            className={neutral}
+            className="trace-press flex h-9 w-9 items-center justify-center rounded-full text-trace-text-muted hover:bg-trace-surface hover:text-trace-text"
             aria-label="Reset execution"
             title="Reset execution"
           >
-            <Icon name="reset" />
+            <Icon name="reset" size={17} />
           </button>
 
-          {/* Playback controls — shown in debug mode */}
-          {debugMode && (
-            <>
-              <span
-                className="mx-0.5 hidden h-7 w-px bg-trace-border sm:block"
-                aria-hidden="true"
-              />
-
-              <button
-                type="button"
-                onClick={onTogglePlayback}
-                disabled={!canPlay}
-                className={`${iconButton} border-trace-violet/35 bg-trace-violet/10 text-trace-violet hover:border-trace-violet hover:bg-trace-violet/20`}
-                aria-label={isPlaying ? "Pause playback" : "Play playback"}
-                title={isPlaying ? "Pause playback" : "Play playback"}
-              >
-                <Icon name={isPlaying ? "pause" : "play"} size={19} />
-              </button>
-
-              <button
-                type="button"
-                onClick={onStep}
-                disabled={!canStep || isPlaying}
-                className={`${iconButton} border-trace-cyan/35 bg-trace-cyan/10 text-trace-cyan hover:border-trace-cyan hover:bg-trace-cyan/20`}
-                aria-label="Next execution step"
-                title="Next step"
-              >
-                <Icon name="next" size={18} />
-              </button>
-            </>
-          )}
-
-          <span
-            className="mx-0.5 hidden h-7 w-px bg-trace-border sm:block"
-            aria-hidden="true"
-          />
-
-          {/* Debug */}
           <button
             type="button"
             onClick={onDebug}
             aria-pressed={debugMode}
-            className={`${iconButton} ${
+            className={`trace-press flex h-9 items-center gap-1.5 rounded-full px-3 text-[14px] font-semibold sm:px-4 ${
               debugMode
-                ? "border-trace-violet bg-trace-violet/20 text-trace-violet"
-                : "border-trace-violet/35 bg-trace-violet/10 text-trace-violet hover:border-trace-violet hover:bg-trace-violet/20"
+                ? "bg-trace-violet/25 text-trace-violet ring-1 ring-inset ring-trace-violet shadow-[0_2px_10px_-2px_var(--trace-violet)]"
+                : "bg-trace-violet/12 text-trace-violet ring-1 ring-inset ring-trace-violet/35 hover:bg-trace-violet/20"
             }`}
             aria-label="Run with Debug"
-            title="Run with Debug"
+            title="Step through from the start (Ctrl+Shift+Enter)"
           >
-            <Icon name="debug" size={19} />
+            <Icon name="debug" size={16} />
+            <span className="hidden sm:inline">Debug</span>
           </button>
 
-          {/* Run */}
           <button
             type="button"
             onClick={onRun}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-trace-brand text-trace-brand-ink shadow-md shadow-trace-brand/15 transition-all hover:brightness-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-trace-brand"
+            className="trace-press flex h-9 items-center gap-1.5 rounded-full bg-gradient-to-b from-[#F5D76E] to-trace-brand px-3.5 text-[14px] font-semibold text-trace-brand-ink shadow-[0_2px_12px_-3px_var(--trace-brand)] hover:brightness-105 sm:px-5"
             aria-label="Run program"
-            title="Run program"
+            title="Run (Ctrl+Enter)"
           >
-            <Icon name="play" size={19} />
+            <Icon name="play" size={14} />
+            <span className="hidden sm:inline">Run</span>
           </button>
 
-          <span
-            className="mx-0.5 hidden h-7 w-px bg-trace-border sm:block"
-            aria-hidden="true"
-          />
-
-          {/* Theme toggle */}
           <button
             type="button"
             onClick={toggleTheme}
-            className={neutral}
+            className="trace-press ml-0.5 flex h-9 w-9 items-center justify-center rounded-full text-trace-text-muted hover:bg-trace-surface hover:text-trace-text"
             aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
             title={`Switch to ${isDark ? "light" : "dark"} mode`}
           >
-            <Icon name={isDark ? "sun" : "moon"} size={18} />
+            <Icon name={isDark ? "sun" : "moon"} size={17} />
           </button>
         </div>
       </div>
